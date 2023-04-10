@@ -2,7 +2,6 @@ package sortMap
 
 import (
 	"crypto/rand"
-	"fmt"
 	"github.com/emirpasic/gods/maps/treemap"
 	"math/big"
 	"sort"
@@ -67,8 +66,8 @@ func TestSortMap(t *testing.T) {
 func TestSortMap2(t *testing.T) {
 	m := NewSortMap()
 	arr := make([]int, 0)
-	for i := 0; i < 100; i++ {
-		n, _ := rand.Int(rand.Reader, big.NewInt(5000000))
+	for i := 0; i < 100000; i++ {
+		n, _ := rand.Int(rand.Reader, big.NewInt(500000000))
 		arr = append(arr, int(n.Int64()))
 	}
 	for i := 0; i < len(arr); i++ {
@@ -77,23 +76,25 @@ func TestSortMap2(t *testing.T) {
 
 	c1 := 0
 	c2 := 0
-	for i := 0; i < 20; i++ {
-		b2, _ := rand.Int(rand.Reader, big.NewInt(5000000))
+	var dd []int64
+	for i := 0; i < 1000; i++ {
+		b2, _ := rand.Int(rand.Reader, big.NewInt(500000000))
 		b1, _ := rand.Int(rand.Reader, big.NewInt(b2.Int64()))
 		s := time.Now().UnixMilli()
-		fmt.Println(m.GetRangeKey(b1.Int64(), b2.Int64()))
+		m.GetRangeKey(b1.Int64(), b2.Int64())
+		//fmt.Println(m.GetRangeKey(b1.Int64(), b2.Int64()))
 		e := time.Now().UnixMilli()
 		c1 += int(e - s)
-		dd := make([]int, 0)
 		s = time.Now().UnixMilli()
+		dd = make([]int64, 0)
 		left, _ := m.SearchRightKey(b1.Int64())
 		for left <= b2.Int64() {
-			dd = append(dd, int(left))
+			dd = append(dd, left)
 			left, _ = m.SearchRightKey(left + 1)
 		}
 		e = time.Now().UnixMilli()
 		c2 += int(e - s)
-		fmt.Println(dd)
+		//fmt.Println(dd)
 	}
 	t.Logf("%d %d", c1, c2)
 
@@ -110,7 +111,7 @@ func TestSortMap3(t *testing.T) {
 		m.Add(int64(arr[i]), 1)
 	}
 	m.Delete(3)
-	t.Logf("%v", m.GetRangeKey(1, 101))
+	t.Logf("%v", m.GetRangeKey(127, 139))
 }
 func find(arr []int, ta int) (int64, int64, int64, int64) {
 	ans1 := -999999
