@@ -526,6 +526,10 @@ func (s *SortMap) String() string {
 	return fmt.Sprint(s.GetRangeKey(-(1 << 63), (1<<63)-1))
 }
 
+func (s *SortMap) Size() int64 {
+	return s.size
+}
+
 type Iterator struct {
 	cur     *Node
 	sortMap *SortMap
