@@ -515,6 +515,83 @@ func (s *SortMap) isAncestor(cur *Node, target *Node) bool {
 	return false
 }
 
+type Iterator struct {
+	cur     *Node
+	sortMap *SortMap
+}
+
+func (s *SortMap) NewIterator() *Iterator {
+	return &Iterator{
+		sortMap: s,
+	}
+}
+
+func (i *Iterator) BeginWith(key int64) *Iterator {
+	if i == nil || i.sortMap == nil {
+		return nil
+	}
+	var ok bool
+	var beginNum int64
+	beginNum, ok = i.sortMap.SearchRightKey(key)
+	if !ok {
+		return i
+	}
+	var sNode *Node
+	sNode, ok = i.sortMap.search(beginNum)
+	if !ok {
+		return i
+	}
+	i.cur = sNode
+	return i
+}
+
+func (i *Iterator) Next() bool {
+	if i == nil || i.sortMap == nil || i.cur == nil {
+		return false
+	}
+	next := i.dfs(i.cur, (int64(len(i.cur.son))-1)*(1-divAbs(i.cur.key))/2)
+	i.cur = next
+	if next == nil {
+		return false
+	}
+	return true
+}
+
+func (i *Iterator) dfs(cur *Node, index int64) *Node {
+	if cur == nil {
+		if index < 19 {
+			return i.dfs(i.sortMap.head[index+1], int64(len(i.sortMap.head)-1)*(1-(index+1)/10))
+		}
+		return nil
+	}
+	if cur.son != nil {
+		now := index
+		for now >= 0 && now < int64(len(cur.son)) {
+			if cur.son[now] != nil {
+				return cur.son[now]
+			}
+			if cur.par == nil {
+				now += 2*(int64(cur.index)/10) - 1
+			} else {
+				now += divAbs(cur.key)
+			}
+		}
+	}
+	// 子节点找不到，遍历往上的邻居节点
+	if cur.par == nil {
+		return i.dfs(cur.par, int64(cur.index))
+	} else {
+		return i.dfs(cur.par, int64(cur.index)+divAbs(cur.key))
+	}
+}
+
+func (i *Iterator) Key() int64 {
+	if i == nil || i.cur == nil {
+		return 0
+	}
+	return i.cur.key
+}
+
 func converseBool(b bool) int {
 	if b {
 		return 1

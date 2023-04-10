@@ -66,7 +66,7 @@ func TestSortMap(t *testing.T) {
 func TestSortMap2(t *testing.T) {
 	m := NewSortMap()
 	arr := make([]int, 0)
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 10000000; i++ {
 		n, _ := rand.Int(rand.Reader, big.NewInt(500000000))
 		arr = append(arr, int(n.Int64()))
 	}
@@ -76,25 +76,29 @@ func TestSortMap2(t *testing.T) {
 
 	c1 := 0
 	c2 := 0
-	var dd []int64
-	for i := 0; i < 1000; i++ {
+	var dd1, dd2 []int64
+	for i := 0; i < 10; i++ {
 		b2, _ := rand.Int(rand.Reader, big.NewInt(500000000))
 		b1, _ := rand.Int(rand.Reader, big.NewInt(b2.Int64()))
 		s := time.Now().UnixMilli()
-		m.GetRangeKey(b1.Int64(), b2.Int64())
+		dd1 = make([]int64, 0)
+		each := m.NewIterator()
+		each = each.BeginWith(b1.Int64())
+		for each.cur != nil && each.Key() <= b2.Int64() {
+			dd1 = append(dd1, each.Key())
+			each.Next()
+		}
+		//m.GetRangeKey(b1.Int64(), b2.Int64())
 		//fmt.Println(m.GetRangeKey(b1.Int64(), b2.Int64()))
 		e := time.Now().UnixMilli()
 		c1 += int(e - s)
 		s = time.Now().UnixMilli()
-		dd = make([]int64, 0)
-		left, _ := m.SearchRightKey(b1.Int64())
-		for left <= b2.Int64() {
-			dd = append(dd, left)
-			left, _ = m.SearchRightKey(left + 1)
+		dd2 = make([]int64, 0)
+		for _, v := range m.GetRangeKey(b1.Int64(), b2.Int64()) {
+			dd2 = append(dd2, v)
 		}
 		e = time.Now().UnixMilli()
 		c2 += int(e - s)
-		//fmt.Println(dd)
 	}
 	t.Logf("%d %d", c1, c2)
 
