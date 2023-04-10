@@ -7,13 +7,21 @@ import (
 
 // 排序数据结构
 type SortMap struct {
-	head []*Node
-	size int64
+	head        []*Node
+	size        int64
+	compareFunc func(key int64) int64
 }
 
 func NewSortMap() *SortMap {
+	return NewSortMapWithCompare(func(key int64) int64 {
+		return key
+	})
+}
+
+func NewSortMapWithCompare(f func(key int64) int64) *SortMap {
 	res := &SortMap{
-		head: make([]*Node, 20),
+		head:        make([]*Node, 20),
+		compareFunc: f,
 	}
 	for k := range res.head {
 		res.head[k] = newNode(0, 0, nil, k)
@@ -44,7 +52,7 @@ type dfsCon struct {
 }
 
 func (s *SortMap) Add(key int64, value interface{}) {
-	str := strconv.FormatInt(key, 10)
+	str := strconv.FormatInt(s.compareFunc(key), 10)
 	if key >= 0 {
 		s.add(key, value, str, s.head[len(str)+9], 0)
 	} else {
@@ -64,15 +72,15 @@ func (s *SortMap) add(key int64, value interface{}, str string, node *Node, tag 
 			s.size++
 			return
 		}
-		if key > cur.son[c].key {
+		if s.compareFunc(key) > s.compareFunc(cur.son[c].key) {
 			cur = cur.son[c]
-		} else if key < cur.son[c].key {
-			compareKey := cur.son[c].key
-			compareStr := strconv.FormatInt(compareKey, 10)
-			compareValue := cur.son[c].value
+		} else if s.compareFunc(key) < s.compareFunc(cur.son[c].key) {
+			nextKey := cur.son[c].key
+			nextStr := strconv.FormatInt(s.compareFunc(nextKey), 10)
+			nextValue := cur.son[c].value
 			cur.son[c].key = key
 			cur.son[c].value = value
-			s.add(compareKey, compareValue, compareStr, cur.son[c], i+1)
+			s.add(nextKey, nextValue, nextStr, cur.son[c], i+1)
 			return
 		} else {
 			cur.son[c].value = value
@@ -90,9 +98,9 @@ func (s *SortMap) Search(key int64) (interface{}, bool) {
 }
 
 func (s *SortMap) search(key int64) (*Node, bool) {
-	str := strconv.FormatInt(key, 10)
+	str := strconv.FormatInt(s.compareFunc(key), 10)
 	var cur *Node
-	if key >= 0 {
+	if s.compareFunc(key) >= 0 {
 		cur = s.head[len(str)+9]
 	} else {
 		str = str[1:]
@@ -103,9 +111,9 @@ func (s *SortMap) search(key int64) (*Node, bool) {
 		if cur.son == nil || cur.son[c] == nil {
 			return nil, false
 		}
-		if cur.son[c].key == key {
+		if s.compareFunc(cur.son[c].key) == s.compareFunc(key) {
 			return cur.son[c], true
-		} else if cur.son[c].key > key {
+		} else if s.compareFunc(cur.son[c].key) > s.compareFunc(key) {
 			return nil, false
 		}
 		cur = cur.son[c]
@@ -118,9 +126,9 @@ func (s *SortMap) SearchLeftKey(key int64) (int64, bool) {
 }
 
 func (s *SortMap) searchLeftKey(key int64) (int64, bool) {
-	str := strconv.FormatInt(key, 10)
+	str := strconv.FormatInt(s.compareFunc(key), 10)
 	var index int64
-	if key >= 0 {
+	if s.compareFunc(key) >= 0 {
 		index = int64(len(str) + 9)
 	} else {
 		str = str[1:]
@@ -137,9 +145,9 @@ func (s *SortMap) searchLeftKey(key int64) (int64, bool) {
 		if cur.son[c] == nil {
 			return s.searchLeftKey2(lastFoundNum, lastFound, index, cur, c)
 		}
-		if cur.son[c].key == key {
+		if s.compareFunc(cur.son[c].key) == s.compareFunc(key) {
 			return cur.son[c].key, true
-		} else if cur.son[c].key > key {
+		} else if s.compareFunc(cur.son[c].key) > s.compareFunc(key) {
 			return s.searchLeftKey2(lastFoundNum, lastFound, index, cur, c)
 		} else {
 			lastFoundNum = cur.son[c].key
@@ -185,9 +193,9 @@ func (s *SortMap) SearchRightKey(key int64) (int64, bool) {
 }
 
 func (s *SortMap) searchRightKey(key int64) (int64, bool) {
-	str := strconv.FormatInt(key, 10)
+	str := strconv.FormatInt(s.compareFunc(key), 10)
 	var index int64
-	if key >= 0 {
+	if s.compareFunc(key) >= 0 {
 		index = int64(len(str) + 9)
 	} else {
 		str = str[1:]
@@ -205,9 +213,9 @@ func (s *SortMap) searchRightKey(key int64) (int64, bool) {
 		if cur.son[c] == nil {
 			return s.searchRightKey2(lastFoundNum, lastFound, index, cur, c)
 		}
-		if cur.son[c].key == key {
+		if s.compareFunc(cur.son[c].key) == s.compareFunc(key) {
 			return cur.son[c].key, true
-		} else if cur.son[c].key > key {
+		} else if s.compareFunc(cur.son[c].key) > s.compareFunc(key) {
 			lastFoundNum = cur.son[c].key
 			lastFound = true
 			return lastFoundNum, lastFound
@@ -228,7 +236,7 @@ func (s *SortMap) searchRightKey1(lastFoundNum int64, lastFound bool, index int6
 		return lastFoundNum, lastFound
 	}
 	for j := 0; j < len(cur.par.son); j++ {
-		if cur.par.son[j] != nil && cur.par.son[j].key > cur.key {
+		if cur.par.son[j] != nil && s.compareFunc(cur.par.son[j].key) > s.compareFunc(cur.key) {
 			return s.peekMinWithNode(cur.par.son[j], int64(j))
 		}
 	}
@@ -250,7 +258,7 @@ func (s *SortMap) searchRightKey2(lastFoundNum int64, lastFound bool, index int6
 		return lastFoundNum, lastFound
 	}
 	for j := 0; j < len(cur.par.son); j++ {
-		if cur.par.son[j] != nil && cur.par.son[j].key > cur.key {
+		if cur.par.son[j] != nil && s.compareFunc(cur.par.son[j].key) > s.compareFunc(cur.key) {
 			return s.peekMinWithNode(cur.par.son[j], int64(j))
 		}
 	}
@@ -258,9 +266,9 @@ func (s *SortMap) searchRightKey2(lastFoundNum int64, lastFound bool, index int6
 }
 
 func (s *SortMap) Delete(key int64) {
-	str := strconv.FormatInt(key, 10)
+	str := strconv.FormatInt(s.compareFunc(key), 10)
 	var cur *Node
-	if key >= 0 {
+	if s.compareFunc(key) >= 0 {
 		cur = s.head[len(str)+9]
 	} else {
 		str = str[1:]
@@ -274,11 +282,11 @@ func (s *SortMap) Delete(key int64) {
 		if cur.son[c] == nil {
 			return
 		}
-		if cur.son[c].key == key {
-			b := key < 0
+		if s.compareFunc(cur.son[c].key) == s.compareFunc(key) {
+			b := s.compareFunc(key) < 0
 			s.up(cur, cur.son[c], c, b)
 			return
-		} else if cur.son[c].key > key {
+		} else if s.compareFunc(cur.son[c].key) > s.compareFunc(key) {
 			return
 		}
 		cur = cur.son[c]
@@ -328,12 +336,12 @@ func (s *SortMap) peekMinWithNode(cur *Node, index int64) (int64, bool) {
 		return cur.key, true
 	}
 	if cur.son != nil {
-		j := (int64(len(cur.son)) - 1) * (1 - divAbs(cur.key)) / 2
+		j := (int64(len(cur.son)) - 1) * (1 - divAbs(s.compareFunc(cur.key))) / 2
 		for j >= 0 && j < int64(len(cur.son)) {
 			if cur.son[j] != nil {
 				return cur.son[j].key, true
 			}
-			j += divAbs(cur.key)
+			j += divAbs(s.compareFunc(cur.key))
 		}
 	}
 	return 0, false
@@ -422,12 +430,12 @@ func (s *SortMap) peekMax(left, right int64) (int64, bool) {
 
 func (s *SortMap) peekMaxWithNode(cur *Node, index int64) (int64, bool) {
 	if cur.son != nil {
-		j := (int64(len(cur.son)) - 1) * (1 + divAbs(cur.key)) / 2
+		j := (int64(len(cur.son)) - 1) * (1 + divAbs(s.compareFunc(cur.key))) / 2
 		for j >= 0 && j < int64(len(cur.son)) {
 			if cur.son[j] != nil {
-				return s.down(cur, cur.son[j], int(j), cur.key < 0, false), true
+				return s.down(cur, cur.son[j], int(j), s.compareFunc(cur.key) < 0, false), true
 			}
-			j -= divAbs(cur.key)
+			j -= divAbs(s.compareFunc(cur.key))
 		}
 	}
 	if cur != s.head[index] {
@@ -468,7 +476,7 @@ func (s *SortMap) GetRangeKey(begin, end int64) []int64 {
 		return nil
 	}
 	dfsCon := &dfsCon{}
-	s.dfs(sNode, sNode, eNode, (int64(len(sNode.son))-1)*(1-divAbs(sNode.key))/2, dfsCon)
+	s.dfs(sNode, sNode, eNode, (int64(len(sNode.son))-1)*(1-divAbs(s.compareFunc(sNode.key)))/2, dfsCon)
 	return dfsCon.data
 }
 
@@ -479,26 +487,26 @@ func (s *SortMap) dfs(cur, startNode, endNode *Node, index int64, con *dfsCon) {
 	// 到了最上层节点
 	if cur == nil {
 		if index < 19 {
-			s.head[index+1].key = startNode.key
+			s.head[index+1].key = s.compareFunc(startNode.key)
 			s.dfs(s.head[index+1], s.head[index+1], endNode, int64(len(s.head)-1)*(1-(index+1)/10), con)
 			s.head[index+1].key = 0
 		}
 		return
 	}
 	// 先把自己和子孙节点遍历
-	if cur != s.head[cur.index] && cur.key >= startNode.key && cur.key <= endNode.key {
+	if cur != s.head[cur.index] && s.compareFunc(cur.key) >= s.compareFunc(startNode.key) && s.compareFunc(cur.key) <= s.compareFunc(endNode.key) {
 		con.data = append(con.data, cur.key)
 	}
 	if cur.son != nil {
 		i := index
 		for i >= 0 && i < int64(len(cur.son)) {
 			if cur.son[i] != nil {
-				s.dfs(cur.son[i], startNode, endNode, (int64(len(cur.son[i].son))-1)*(1-divAbs(cur.son[i].key))/2, con)
+				s.dfs(cur.son[i], startNode, endNode, (int64(len(cur.son[i].son))-1)*(1-divAbs(s.compareFunc(cur.son[i].key)))/2, con)
 			}
 			if cur.par == nil {
 				i += 2*(int64(cur.index)/10) - 1
 			} else {
-				i += divAbs(cur.key)
+				i += divAbs(s.compareFunc(cur.key))
 			}
 		}
 	}
@@ -507,7 +515,7 @@ func (s *SortMap) dfs(cur, startNode, endNode *Node, index int64, con *dfsCon) {
 		if cur.par == nil {
 			s.dfs(cur.par, startNode, endNode, int64(cur.index), con)
 		} else {
-			s.dfs(cur.par, startNode, endNode, int64(cur.index)+divAbs(cur.key), con)
+			s.dfs(cur.par, startNode, endNode, int64(cur.index)+divAbs(s.compareFunc(cur.key)), con)
 		}
 	}
 }
@@ -564,7 +572,7 @@ func (i *Iterator) Next() bool {
 	if i == nil || i.sortMap == nil || i.cur == nil {
 		return false
 	}
-	next := i.dfs(i.cur, (int64(len(i.cur.son))-1)*(1-divAbs(i.cur.key))/2)
+	next := i.dfs(i.cur, (int64(len(i.cur.son))-1)*(1-divAbs(i.sortMap.compareFunc(i.cur.key)))/2)
 	i.cur = next
 	if next == nil {
 		return false
@@ -588,7 +596,7 @@ func (i *Iterator) dfs(cur *Node, index int64) *Node {
 			if cur.par == nil {
 				now += 2*(int64(cur.index)/10) - 1
 			} else {
-				now += divAbs(cur.key)
+				now += divAbs(i.sortMap.compareFunc(cur.key))
 			}
 		}
 	}
@@ -596,7 +604,7 @@ func (i *Iterator) dfs(cur *Node, index int64) *Node {
 	if cur.par == nil {
 		return i.dfs(cur.par, int64(cur.index))
 	} else {
-		return i.dfs(cur.par, int64(cur.index)+divAbs(cur.key))
+		return i.dfs(cur.par, int64(cur.index)+divAbs(i.sortMap.compareFunc(cur.key)))
 	}
 }
 

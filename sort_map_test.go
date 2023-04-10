@@ -66,7 +66,7 @@ func TestSortMap(t *testing.T) {
 func TestSortMap2(t *testing.T) {
 	m := NewSortMap()
 	arr := make([]int, 0)
-	for i := 0; i < 10000000; i++ {
+	for i := 0; i < 100000; i++ {
 		n, _ := rand.Int(rand.Reader, big.NewInt(500000000))
 		arr = append(arr, int(n.Int64()))
 	}
@@ -77,7 +77,7 @@ func TestSortMap2(t *testing.T) {
 	c1 := 0
 	c2 := 0
 	var dd1, dd2 []int64
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1000; i++ {
 		b2, _ := rand.Int(rand.Reader, big.NewInt(500000000))
 		b1, _ := rand.Int(rand.Reader, big.NewInt(b2.Int64()))
 		s := time.Now().UnixMilli()
