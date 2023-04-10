@@ -1,10 +1,14 @@
 package sortMap
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 // 排序数据结构
 type SortMap struct {
 	head []*Node
+	size int64
 }
 
 func NewSortMap() *SortMap {
@@ -57,6 +61,7 @@ func (s *SortMap) add(key int64, value interface{}, str string, node *Node, tag 
 		}
 		if cur.son[c] == nil {
 			cur.son[c] = newNode(key, value, cur, c)
+			s.size++
 			return
 		}
 		if key > cur.son[c].key {
@@ -345,6 +350,7 @@ func (s *SortMap) up(par *Node, cur *Node, c int, f bool) {
 		cur = nil
 		par.son[c] = nil
 		s.deleteSon(par)
+		s.size--
 		return
 	}
 	k := (len(cur.son) - 1) * converseBool(f)
@@ -360,6 +366,7 @@ func (s *SortMap) up(par *Node, cur *Node, c int, f bool) {
 	cur = nil
 	par.son[c] = nil
 	s.deleteSon(par)
+	s.size--
 }
 
 func (s *SortMap) deleteSon(par *Node) {
@@ -513,6 +520,10 @@ func (s *SortMap) isAncestor(cur *Node, target *Node) bool {
 		target = target.par
 	}
 	return false
+}
+
+func (s *SortMap) String() string {
+	return fmt.Sprint(s.GetRangeKey(-(1 << 63), (1<<63)-1))
 }
 
 type Iterator struct {
