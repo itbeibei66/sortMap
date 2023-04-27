@@ -5,6 +5,9 @@ import (
 	"strconv"
 )
 
+const zero = 0
+const nine = 9
+
 // 排序数据结构
 type SortMap struct {
 	head []*Node
@@ -132,15 +135,15 @@ func (s *SortMap) searchLeftKey(key int64) (int64, bool) {
 	for i := 0; i < len(str); i++ {
 		c := int(str[i] - '0')
 		if cur.son == nil {
-			return s.searchLeftKey1(lastFoundNum, lastFound, index, cur)
+			return s.searchLeftKey1(lastFoundNum, lastFound, index, cur, zero)
 		}
 		if cur.son[c] == nil {
-			return s.searchLeftKey2(lastFoundNum, lastFound, index, cur, c)
+			return s.searchLeftKey1(lastFoundNum, lastFound, index, cur, c)
 		}
 		if cur.son[c].key == key {
 			return cur.son[c].key, true
 		} else if cur.son[c].key > key {
-			return s.searchLeftKey2(lastFoundNum, lastFound, index, cur, c)
+			return s.searchLeftKey1(lastFoundNum, lastFound, index, cur, c)
 		} else {
 			lastFoundNum = cur.son[c].key
 			lastFound = true
@@ -150,20 +153,7 @@ func (s *SortMap) searchLeftKey(key int64) (int64, bool) {
 	return lastFoundNum, lastFound
 }
 
-func (s *SortMap) searchLeftKey1(lastFoundNum int64, lastFound bool, index int64, cur *Node) (int64, bool) {
-	if cur == s.head[index] {
-		for j := index - 1; j >= 0; j-- {
-			if s.head[j].son != nil {
-				return s.peekMaxWithNode(s.head[j], j)
-			}
-		}
-	} else {
-		return cur.key, true
-	}
-	return lastFoundNum, lastFound
-}
-
-func (s *SortMap) searchLeftKey2(lastFoundNum int64, lastFound bool, index int64, cur *Node, c int) (int64, bool) {
+func (s *SortMap) searchLeftKey1(lastFoundNum int64, lastFound bool, index int64, cur *Node, c int) (int64, bool) {
 	for k := c - 1; k >= 0; k-- {
 		if cur.son[k] != nil {
 			return s.peekMaxWithNode(cur.son[k], int64(k))
@@ -200,10 +190,10 @@ func (s *SortMap) searchRightKey(key int64) (int64, bool) {
 	for i := 0; i < len(str); i++ {
 		c := int(str[i] - '0')
 		if cur.son == nil {
-			return s.searchRightKey1(lastFoundNum, lastFound, index, cur)
+			return s.searchRightKey1(lastFoundNum, lastFound, index, cur, nine)
 		}
 		if cur.son[c] == nil {
-			return s.searchRightKey2(lastFoundNum, lastFound, index, cur, c)
+			return s.searchRightKey1(lastFoundNum, lastFound, index, cur, c)
 		}
 		if cur.son[c].key == key {
 			return cur.son[c].key, true
@@ -218,24 +208,7 @@ func (s *SortMap) searchRightKey(key int64) (int64, bool) {
 	return lastFoundNum, lastFound
 }
 
-func (s *SortMap) searchRightKey1(lastFoundNum int64, lastFound bool, index int64, cur *Node) (int64, bool) {
-	if cur == s.head[index] {
-		for j := index + 1; j <= 19; j++ {
-			if s.head[j].son != nil {
-				return s.peekMinWithNode(s.head[j], j)
-			}
-		}
-		return lastFoundNum, lastFound
-	}
-	for j := 0; j < len(cur.par.son); j++ {
-		if cur.par.son[j] != nil && cur.par.son[j].key > cur.key {
-			return s.peekMinWithNode(cur.par.son[j], int64(j))
-		}
-	}
-	return s.searchRightKey1(lastFoundNum, lastFound, index, cur.par)
-}
-
-func (s *SortMap) searchRightKey2(lastFoundNum int64, lastFound bool, index int64, cur *Node, c int) (int64, bool) {
+func (s *SortMap) searchRightKey1(lastFoundNum int64, lastFound bool, index int64, cur *Node, c int) (int64, bool) {
 	for k := c + 1; k < 10; k++ {
 		if cur.son[k] != nil {
 			return s.peekMinWithNode(cur.son[k], int64(k))
@@ -254,7 +227,7 @@ func (s *SortMap) searchRightKey2(lastFoundNum int64, lastFound bool, index int6
 			return s.peekMinWithNode(cur.par.son[j], int64(j))
 		}
 	}
-	return s.searchRightKey1(lastFoundNum, lastFound, index, cur.par)
+	return s.searchRightKey1(lastFoundNum, lastFound, index, cur.par, nine)
 }
 
 func (s *SortMap) Delete(key int64) {
@@ -506,9 +479,9 @@ func (s *SortMap) dfs(cur, startNode, endNode *Node, index int64, con *dfsCon) {
 	if s.isAncestor(cur, startNode) {
 		if cur.par == nil {
 			s.dfs(cur.par, startNode, endNode, int64(cur.index), con)
-		} else {
-			s.dfs(cur.par, startNode, endNode, int64(cur.index)+divAbs(cur.key), con)
+			return
 		}
+		s.dfs(cur.par, startNode, endNode, int64(cur.index)+divAbs(cur.key), con)
 	}
 }
 
@@ -595,9 +568,8 @@ func (i *Iterator) dfs(cur *Node, index int64) *Node {
 	// 子节点找不到，遍历往上的邻居节点
 	if cur.par == nil {
 		return i.dfs(cur.par, int64(cur.index))
-	} else {
-		return i.dfs(cur.par, int64(cur.index)+divAbs(cur.key))
 	}
+	return i.dfs(cur.par, int64(cur.index)+divAbs(cur.key))
 }
 
 func (i *Iterator) Key() int64 {
